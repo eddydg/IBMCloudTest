@@ -19,7 +19,8 @@
             android:id="@+id/input"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/input_hint" />
+            android:hint="@string/input_hint"
+            android:text="Hello! How are you?" />
 
 
     </LinearLayout>
@@ -62,11 +63,30 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/translate"
-        android:enabled="false" />
+        android:enabled="true" />
 
 
     <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="Translation"
+        android:id="@+id/textView" />
+
+    <TextView
         android:id="@+id/translated_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="Sentiment"
+        android:id="@+id/textView2" />
+
+    <TextView
+        android:id="@+id/sentiment_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 

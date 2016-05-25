@@ -26,12 +26,18 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RadioGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.ibm.watson.developer_cloud.alchemy.v1.AlchemyLanguage;
+import com.ibm.watson.developer_cloud.alchemy.v1.model.DocumentSentiment;
+import com.ibm.watson.developer_cloud.alchemy.v1.util.AlchemyEndPoints;
 import com.ibm.watson.developer_cloud.http.ServiceCallback;
 import com.ibm.watson.developer_cloud.language_translation.v2.LanguageTranslation;
 import com.ibm.watson.developer_cloud.language_translation.v2.model.Language;
 import com.ibm.watson.developer_cloud.language_translation.v2.model.TranslationResult;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
   private final String TAG = "MainActivity";
@@ -40,21 +46,28 @@ public class MainActivity extends AppCompatActivity {
   private EditText input;
   private Button translate;
   private TextView translatedText;
+  private TextView sentimentText;
   private LanguageTranslation translationService;
+  private AlchemyLanguage alchmemyLanguageService;
   private Language selectedTargetLanguage = Language.SPANISH;
+
+  protected AppCompatActivity activity;
 
 
   @Override protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
+    activity = this;
 
-    AlchemyLanguage al = new AlchemyLanguage();
     translationService = initLanguageTranslationService();
+    alchmemyLanguageService = initAlchemyLanguageService();
 
     targetLanguage = (RadioGroup) findViewById(R.id.target_language);
     input = (EditText) findViewById(R.id.input);
     translate = (Button) findViewById(R.id.translate);
     translatedText = (TextView) findViewById(R.id.translated_text);
+
+    sentimentText = (TextView) findViewById(R.id.sentiment_text);
 
     targetLanguage.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
       @Override public void onCheckedChanged(RadioGroup group, int checkedId) {
@@ -72,32 +85,13 @@ public class MainActivity extends AppCompatActivity {
       }
     });
 
-    input.addTextChangedListener(new EmptyTextWatcher() {
-      @Override public void onEmpty(boolean empty) {
-        if (empty) {
-          translate.setEnabled(false);
-        } else {
-          translate.setEnabled(true);
-        }
-      }
-    });
-
     translate.setOnClickListener(new View.OnClickListener() {
 
       @Override public void onClick(View v) {
         String content = input.getText().toString();
-        translationService.translate(content, Language.ENGLISH, selectedTargetLanguage).enqueue(new ServiceCallback<TranslationResult>() {
-          @Override
-          public void onResponse(TranslationResult response) {
-            String translation = response.getFirstTranslation();
-            translatedText.setText(translation);
-          }
 
-          @Override
-          public void onFailure(Exception e) {
-
-          }
-        });
+        new AlchemyTask().execute(content);
+        new TranslationTask().execute(content);
 
       }
     });
@@ -111,24 +105,69 @@ public class MainActivity extends AppCompatActivity {
     return service;
   }
 
-  private abstract class EmptyTextWatcher implements TextWatcher {
-    private boolean isEmpty = true; // assumes text is initially empty
+  private AlchemyLanguage initAlchemyLanguageService() {
+    AlchemyLanguage service = new AlchemyLanguage();
+    String apikey = "3d22fdc17a90d800a7c5dd2a502f4d4dc480ee18";
+    service.setApiKey(apikey);
+    return service;
+  }
 
-    @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-    @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
-      if (s.length() == 0) {
-        isEmpty = true;
-        onEmpty(true);
-      } else if (isEmpty) {
-        isEmpty = false;
-        onEmpty(false);
+  private void showSentiment(final String sentiment) {
+    runOnUiThread(new Runnable() {
+      @Override public void run() {
+        sentimentText.setText(sentiment);
       }
+    });
+  }
+
+  private void showTranslation(final String translation) {
+    runOnUiThread(new Runnable() {
+      @Override public void run() {
+        translatedText.setText(translation);
+      }
+    });
+  }
+
+  private class AlchemyTask extends AsyncTask<String, Void, Void> {
+    @Override
+    protected Void doInBackground(String... strings) {
+
+      Map<String, Object> params = new HashMap<>();
+      params.put(AlchemyLanguage.TEXT, strings[0]);
+      alchmemyLanguageService.getSentiment(params).enqueue(new ServiceCallback<DocumentSentiment>() {
+        @Override
+        public void onResponse(DocumentSentiment response) {
+          String sentiment = response.getSentiment().toString();
+          showSentiment(sentiment);
+        }
+
+        @Override
+        public void onFailure(Exception e) {
+          Toast.makeText(activity.getBaseContext(), "Failed to retreive alchemy language result", Toast.LENGTH_SHORT).show();
+        }
+      });
+
+      return null;
     }
+  }
 
-    @Override public void afterTextChanged(Editable s) {}
+  private class TranslationTask extends AsyncTask<String, Void, Void> {
+    @Override
+    protected Void doInBackground(String... strings) {
+      translationService.translate(strings[0], Language.ENGLISH, selectedTargetLanguage).enqueue(new ServiceCallback<TranslationResult>() {
+        @Override
+        public void onResponse(TranslationResult response) {
+          showTranslation(response.getFirstTranslation());
+        }
 
-    public abstract void onEmpty(boolean empty);
+        @Override
+        public void onFailure(Exception e) {
+          Toast.makeText(activity.getBaseContext(), "Failed to retreive translation result", Toast.LENGTH_SHORT).show();
+        }
+      });
+
+      return null;
+    }
   }
 
 }

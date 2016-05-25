@@ -28,8 +28,10 @@ import android.widget.RadioGroup;
 import android.widget.TextView;
 
 import com.ibm.watson.developer_cloud.alchemy.v1.AlchemyLanguage;
+import com.ibm.watson.developer_cloud.http.ServiceCallback;
 import com.ibm.watson.developer_cloud.language_translation.v2.LanguageTranslation;
 import com.ibm.watson.developer_cloud.language_translation.v2.model.Language;
+import com.ibm.watson.developer_cloud.language_translation.v2.model.TranslationResult;
 
 public class MainActivity extends AppCompatActivity {
   private final String TAG = "MainActivity";
@@ -47,7 +49,6 @@ public class MainActivity extends AppCompatActivity {
     setContentView(R.layout.activity_main);
 
     AlchemyLanguage al = new AlchemyLanguage();
-    al.
     translationService = initLanguageTranslationService();
 
     targetLanguage = (RadioGroup) findViewById(R.id.target_language);
@@ -84,16 +85,20 @@ public class MainActivity extends AppCompatActivity {
     translate.setOnClickListener(new View.OnClickListener() {
 
       @Override public void onClick(View v) {
-        new TranslationTask().execute(input.getText().toString());
-      }
-    });
-  }
+        String content = input.getText().toString();
+        translationService.translate(content, Language.ENGLISH, selectedTargetLanguage).enqueue(new ServiceCallback<TranslationResult>() {
+          @Override
+          public void onResponse(TranslationResult response) {
+            String translation = response.getFirstTranslation();
+            translatedText.setText(translation);
+          }
 
+          @Override
+          public void onFailure(Exception e) {
 
-  private void showTranslation(final String translation) {
-    runOnUiThread(new Runnable() {
-      @Override public void run() {
-        translatedText.setText(translation);
+          }
+        });
+
       }
     });
   }
@@ -125,15 +130,5 @@ public class MainActivity extends AppCompatActivity {
 
     public abstract void onEmpty(boolean empty);
   }
-
-
-  private class TranslationTask extends AsyncTask<String, Void, String> {
-
-    @Override protected String doInBackground(String... params) {
-      showTranslation(translationService.translate(params[0], Language.ENGLISH, selectedTargetLanguage).getFirstTranslation());
-      return "Did translate";
-    }
-  }
-
 
 }

@@ -107,7 +107,7 @@ public class MainActivity extends AppCompatActivity {
 
   private AlchemyLanguage initAlchemyLanguageService() {
     AlchemyLanguage service = new AlchemyLanguage();
-    String apikey = "3d22fdc17a90d800a7c5dd2a502f4d4dc480ee18";
+    String apikey = getString(R.string.alchemy_api);
     service.setApiKey(apikey);
     return service;
   }
